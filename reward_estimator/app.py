@@ -1,10 +1,12 @@
+import re
+
 from steem import Steem
 from steem.amount import Amount
 from steem.post import Post
 from dateutil.parser import parse
 from steembase.exceptions import PostDoesNotExist
 
-from flask import Flask, render_template, abort
+from flask import Flask, render_template, abort, request, redirect
 import redis
 
 app = Flask(__name__)
@@ -106,7 +108,14 @@ def calculate_rewards(steemd, post):
 
 @app.route('/')
 def index():
-    return "use it via URLs."
+    if request.query_string and request.args.get('url'):
+        url = request.args.get('url')
+        url = url.replace("https://", "")
+        url = url.replace("http://", "")
+        url = re.sub("^(.*?)/", "", url)
+
+        return redirect('/' + url)
+    return render_template("index.html")
 
 
 @app.route('/<_>/@<username>/<permlink>')
@@ -115,7 +124,7 @@ def profile(_, username, permlink):
         post = Post("@%s/%s" % (username, permlink))
     except PostDoesNotExist:
         abort(404)
-
+        
     total, curation, author, beneficiaries = calculate_rewards(s, post)
 
     return render_template(
