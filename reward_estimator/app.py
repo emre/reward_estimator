@@ -162,6 +162,7 @@ def profile_as_json():
             "author": author,
             "beneficiaries": beneficiaries,
             "cashout_time": post["cashout_time"],
+            "is_main_post": post.is_main_post(),
         }
 
     return jsonify(**rewards)
