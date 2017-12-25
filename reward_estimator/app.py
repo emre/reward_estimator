@@ -146,7 +146,7 @@ def profile_as_json():
     else:
         links = request.form.get("links")
 
-    rewards = {}
+    rewards = []
     links = links.split(",")
     for link in links:
         try:
@@ -156,13 +156,17 @@ def profile_as_json():
 
         total, curation, author, beneficiaries = calculate_rewards(s, post)
 
-        rewards[link] = {
+        rewards.append({
+            "link": link,
             "total": total,
             "curation": curation,
             "author": author,
             "beneficiaries": beneficiaries,
             "cashout_time": post["cashout_time"],
             "is_main_post": post.is_main_post(),
-        }
+            "elapsed_seconds": int(post.time_elapsed().seconds)
+        })
 
-    return jsonify(**rewards)
+    rewards = sorted(rewards, key=lambda k: k['elapsed_seconds'])
+
+    return jsonify({"rewards": rewards})
