@@ -155,6 +155,7 @@ def profile_as_json():
             "curation": curation,
             "author": author,
             "beneficiaries": beneficiaries,
+            "cashout_time": post["cashout_time"],
         }
 
     return jsonify(**rewards)
