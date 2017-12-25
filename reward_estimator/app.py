@@ -164,6 +164,7 @@ def profile_as_json():
             "beneficiaries": beneficiaries,
             "cashout_time": post["cashout_time"],
             "is_main_post": post.is_main_post(),
+            "title": post["title"],
             "elapsed_seconds": int(post.time_elapsed().seconds)
         })
 
