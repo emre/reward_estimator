@@ -137,9 +137,15 @@ def profile(_, username, permlink):
         beneficiaries=beneficiaries,
     )
 
-@app.route('/rewards.json')
+
+@app.route('/rewards.json', methods=["GET", "POST"])
 def profile_as_json():
-    links = request.args.get("links")
+
+    if request.method == "GET":
+        links = request.args.get("links")
+    else:
+        links = request.form.get("links")
+
     rewards = {}
     links = links.split(",")
     for link in links:
