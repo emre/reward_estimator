@@ -165,7 +165,7 @@ def profile_as_json():
             "cashout_time": post["cashout_time"],
             "is_main_post": post.is_main_post(),
             "title": post["title"],
-            "elapsed_seconds": int(post.time_elapsed().seconds)
+            "elapsed_seconds": int(post.time_elapsed().total_seconds()),
         })
 
     rewards = sorted(rewards, key=lambda k: k['elapsed_seconds'])
