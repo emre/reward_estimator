@@ -6,7 +6,8 @@ from steem.post import Post
 from dateutil.parser import parse
 from steembase.exceptions import PostDoesNotExist
 
-from flask import Flask, render_template, abort, request, redirect
+
+from flask import Flask, render_template, abort, request, redirect, jsonify
 import redis
 
 app = Flask(__name__)
@@ -135,3 +136,25 @@ def profile(_, username, permlink):
         author=author,
         beneficiaries=beneficiaries,
     )
+
+@app.route('/rewards.json')
+def profile_as_json():
+    links = request.args.get("links")
+    rewards = {}
+    links = links.split(",")
+    for link in links:
+        try:
+            post = Post(link)
+        except PostDoesNotExist:
+            abort(404)
+
+        total, curation, author, beneficiaries = calculate_rewards(s, post)
+
+        rewards[link] = {
+            "total": total,
+            "curation": curation,
+            "author": author,
+            "beneficiaries": beneficiaries,
+        }
+
+    return jsonify(**rewards)
