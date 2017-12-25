@@ -102,7 +102,8 @@ def calculate_rewards(steemd, post):
     total = round(total_post_rewards, 2)
     curation = round(total_curation_rewards, 2)
     author = round(total_author_rewards, 2)
-    beneficiaries = round((total - curation - author), 2)
+    beneficiaries = round(
+        (total_post_rewards - total_curation_rewards - total_author_rewards), 2)
 
     return total, curation, author, beneficiaries
 
