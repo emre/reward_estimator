@@ -103,9 +103,14 @@ def calculate_rewards(steemd, post):
     curation = round(total_curation_rewards, 2)
     author = round(total_author_rewards, 2)
     beneficiaries = round(
-        (total_post_rewards - total_curation_rewards - total_author_rewards), 2)
+        (total_post_rewards - total_curation_rewards - total_author_rewards),
+        2
+    )
 
-    return total, curation, author, beneficiaries
+    sbd_amount = author / 2
+    sp_amount = round(author / 2 / Amount(base_price).amount, 2)
+
+    return total, curation, author, beneficiaries, sbd_amount, sp_amount
 
 
 @app.route('/')
@@ -127,7 +132,7 @@ def profile(_, username, permlink):
     except PostDoesNotExist:
         abort(404)
         
-    total, curation, author, beneficiaries = calculate_rewards(s, post)
+    total, curation, author, beneficiaries, _, _ = calculate_rewards(s, post)
 
     return render_template(
         "rewards.html",
@@ -155,7 +160,8 @@ def profile_as_json():
         except PostDoesNotExist:
             abort(404)
 
-        total, curation, author, beneficiaries = calculate_rewards(s, post)
+        total, curation, author, beneficiaries, sbd_amount, sp_amount = \
+            calculate_rewards(s, post)
 
         rewards.append({
             "link": link,
@@ -167,6 +173,8 @@ def profile_as_json():
             "is_main_post": post.is_main_post(),
             "title": post["title"],
             "elapsed_seconds": int(post.time_elapsed().total_seconds()),
+            "sbd_amount": sbd_amount,
+            "sp_amount": sp_amount,
         })
 
     rewards = sorted(rewards, key=lambda k: k['elapsed_seconds'])
