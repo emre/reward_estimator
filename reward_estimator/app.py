@@ -128,7 +128,7 @@ def index():
 @app.route('/<_>/@<username>/<permlink>')
 def profile(_, username, permlink):
     try:
-        post = Post("@%s/%s" % (username, permlink))
+        post = Post("@%s/%s" % (username, permlink), steemd_instance=s)
     except PostDoesNotExist:
         abort(404)
         
@@ -156,7 +156,7 @@ def profile_as_json():
     links = links.split(",")
     for link in links:
         try:
-            post = Post(link)
+            post = Post(link, steemd_instance=s)
         except PostDoesNotExist:
             abort(404)
 
