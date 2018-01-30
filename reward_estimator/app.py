@@ -92,7 +92,12 @@ def calculate_rewards(steemd, post):
         total_post_rewards += vote_payout
         total_curation_rewards += curation_payout
 
-    total_author_rewards = total_post_rewards - total_curation_rewards
+    if post.get("allow_curation_rewards"):
+        total_author_rewards = total_post_rewards - total_curation_rewards
+    else:
+        total_author_rewards = total_post_rewards
+        total_curation_rewards = 0
+
     if post.get("beneficiaries"):
         beneficiaries_sum = sum(
             b["weight"] for b in post["beneficiaries"]) / 100
