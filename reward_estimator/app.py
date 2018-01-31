@@ -8,7 +8,7 @@ from steembase.exceptions import PostDoesNotExist
 
 
 from flask import Flask, render_template, abort, request, redirect, jsonify
-import redis
+import redis, requests
 
 app = Flask(__name__)
 
@@ -19,14 +19,25 @@ r = redis.Redis()
 def get_reward_fund(steemd):
     reward_balance = r.get("reward_balance")
     recent_claims = r.get("recent_claims")
+    sbd_price = r.get("sbd_price")
     if not reward_balance or recent_claims:
         reward_fund = steemd.get_reward_fund('post')
         r.set("reward_balance", reward_fund["reward_balance"])
-        r.expire("reward_balance", 150)
+        r.expire("reward_balance", 300)
         r.set("recent_claims", reward_fund["recent_claims"])
-        r.expire("recent_claims", 150)
+        r.expire("recent_claims", 300)
         reward_balance = reward_fund["reward_balance"]
         recent_claims = reward_fund["recent_claims"]
+
+    if not sbd_price:
+        try:
+            sbd_price = requests.get(
+                "https://api.coinmarketcap.com/v1/ticker/steem-dollars/"
+            ).json()[0]["price_usd"]
+            r.set("sbd_price", sbd_price)
+            r.expire("sbd_price", 300)
+        except Exception as error:
+            sbd_price = 1
 
     if isinstance(reward_balance, bytes):
         reward_balance = reward_balance.decode("utf-8")
@@ -34,7 +45,7 @@ def get_reward_fund(steemd):
     if isinstance(recent_claims, bytes):
         recent_claims = recent_claims.decode("utf-8")
 
-    return reward_balance, recent_claims
+    return reward_balance, recent_claims, sbd_price
 
 
 def get_base_price(steemd):
@@ -69,7 +80,7 @@ def calculate_rewards(steemd, post):
     total_post_rewards = 0
     total_curation_rewards = 0
 
-    reward_balance, recent_claims = get_reward_fund(steemd)
+    reward_balance, recent_claims, sbd_price = get_reward_fund(steemd)
     base_price = get_base_price(steemd)
 
     for vote in post["active_votes"]:
@@ -114,8 +125,10 @@ def calculate_rewards(steemd, post):
 
     sbd_amount = author / 2
     sp_amount = round(author / 2 / Amount(base_price).amount, 2)
+    usd_amount = round(sbd_amount * float(sbd_price), 2)
 
-    return total, curation, author, beneficiaries, sbd_amount, sp_amount
+    return total, curation, author, beneficiaries, sbd_amount, \
+           sp_amount, usd_amount
 
 
 @app.route('/')
@@ -137,7 +150,8 @@ def profile(_, username, permlink):
     except PostDoesNotExist:
         abort(404)
         
-    total, curation, author, beneficiaries, _, _ = calculate_rewards(s, post)
+    total, curation, author, beneficiaries, _, _, _ = \
+        calculate_rewards(s, post)
 
     return render_template(
         "rewards.html",
@@ -165,8 +179,8 @@ def profile_as_json():
         except PostDoesNotExist:
             abort(404)
 
-        total, curation, author, beneficiaries, sbd_amount, sp_amount = \
-            calculate_rewards(s, post)
+        total, curation, author, beneficiaries, sbd_amount, sp_amount, \
+            usd_amount = calculate_rewards(s, post)
 
         rewards.append({
             "link": link,
@@ -180,6 +194,7 @@ def profile_as_json():
             "elapsed_seconds": int(post.time_elapsed().total_seconds()),
             "sbd_amount": sbd_amount,
             "sp_amount": sp_amount,
+            "usd_amount": usd_amount,
         })
 
     rewards = sorted(rewards, key=lambda k: k['elapsed_seconds'])
