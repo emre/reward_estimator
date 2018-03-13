@@ -12,7 +12,11 @@ import redis, requests
 
 app = Flask(__name__)
 
-s = Steem(nodes=["https://rpc.buildteam.io"])
+
+def get_steemd_instance():
+    return Steem(nodes=["https://rpc.buildteam.io"])
+
+
 r = redis.Redis()
 
 
@@ -145,6 +149,8 @@ def index():
 
 @app.route('/<_>/@<username>/<permlink>')
 def profile(_, username, permlink):
+    s = get_steemd_instance()
+
     try:
         post = Post("@%s/%s" % (username, permlink), steemd_instance=s)
     except PostDoesNotExist:
@@ -166,6 +172,8 @@ def profile(_, username, permlink):
 @app.route('/rewards.json', methods=["GET", "POST"])
 def profile_as_json():
 
+    steemd_instance = get_steemd_instance()
+
     if request.method == "GET":
         links = request.args.get("links")
     else:
@@ -175,12 +183,12 @@ def profile_as_json():
     links = links.split(",")
     for link in links:
         try:
-            post = Post(link, steemd_instance=s)
+            post = Post(link, steemd_instance=steemd_instance)
         except PostDoesNotExist:
             abort(404)
 
         total, curation, author, beneficiaries, sbd_amount, sp_amount, \
-            usd_amount = calculate_rewards(s, post)
+            usd_amount = calculate_rewards(steemd_instance, post)
 
         rewards.append({
             "link": link,
